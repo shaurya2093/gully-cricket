@@ -1,0 +1,20 @@
+{
+  "name": "gully-sixes",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A 3D gully cricket batting game for the browser",
+  "type": "module",
+  "scripts": {
+    "build": "node tools/build.mjs",
+    "test": "node tests/sim.test.mjs",
+    "test:browser": "python3 tools/e2e.py",
+    "calibrate": "node tools/calibrate.mjs",
+    "serve": "python3 -m http.server 8080"
+  },
+  "dependencies": {
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.2"
+  }
+}

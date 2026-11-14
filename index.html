@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Gully Sixes: 3D street cricket</title>
+  <meta name="description" content="A 3D gully cricket batting game. Beat the daily score, chase targets and clear the wall for six.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Gully Sixes: 3D street cricket">
+  <meta property="og:description" content="Street cricket, street rules. One daily challenge, the same for everyone.">
+  <meta property="og:image" content="og.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#1d2433">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Gully Sixes">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <canvas id="stage" aria-label="Gully Sixes game"></canvas>
+  <div id="touch"></div>
+
+  <div id="hud" hidden>
+    <div class="hud-top">
+      <div class="score"><span id="hRuns">0</span><small id="hWk"></small><div id="hLives" class="lives"></div></div>
+      <div class="hud-mid">
+        <div id="hTitle"></div>
+        <div id="hGoal"></div>
+        <div class="bar"><i id="hBar"></i></div>
+      </div>
+      <div class="hud-right"><span id="hOvers"></span><button id="pauseBtn" aria-label="Pause"><i></i><i></i></button></div>
+    </div>
+    <div id="hOver" class="chips" aria-label="This over"></div>
+    <div id="overCard"></div>
+    <div id="banner" aria-live="polite"></div>
+    <div id="timing"></div>
+    <div id="hint"></div>
+    <button id="loftBtn" aria-pressed="false">LOFT <b>OFF</b></button>
+    <div class="keys">&larr; &uarr; &rarr; swing &nbsp;&middot;&nbsp; Shift loft &nbsp;&middot;&nbsp; P pause</div>
+  </div>
+
+  <div id="pause" hidden>
+    <div class="panel small">
+      <h2>Paused</h2>
+      <button class="btn primary" data-act="resume">Resume</button>
+      <button class="btn" data-act="restart">Restart</button>
+      <button class="btn ghost" data-act="home">Quit to home</button>
+    </div>
+  </div>
+
+  <div id="screens" class="screens" hidden></div>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <noscript><p style="color:#fff;padding:24px;font-family:sans-serif">Gully Sixes needs JavaScript to run.</p></noscript>
+  <script src="app.js"></script>
+</body>
+</html>
