@@ -23,7 +23,7 @@ const iconUri = 'data:image/svg+xml,' + encodeURIComponent(icon);
 html = html
   .replace('<link rel="manifest" href="manifest.json">\n', '')
   .replace('  <link rel="apple-touch-icon" href="apple-touch-icon.png">\n', '')
-  .replace('  <meta property="og:image" content="og.jpg">\n', '')
+  .replace(/  <meta property="og:(image|url)" content="[^"]*">\n/g, '')
   .replace('<link rel="icon" href="icon.svg" type="image/svg+xml">', () => `<link rel="icon" href="${iconUri}">`)
   .replace('<link rel="stylesheet" href="styles.css">', () => `<style>\n${css}</style>`)
   .replace('<script src="app.js"></script>', () => `<script>window.__SINGLE_FILE__=true;</script>\n<script>${js.replace(/<\/script/gi, '<\\/script')}</script>`);

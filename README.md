@@ -30,7 +30,7 @@ Open `index.html` in a browser, or host the folder on any static host (see below
 2. In the repository, open **Settings → Pages**, choose **Deploy from a branch**, pick the branch and the `/ (root)` folder, and save.
 3. The game appears at `https://<username>.github.io/<repository>/` after about a minute.
 
-After hosting, change `og:image` in `index.html` to the full address of `og.jpg` (for example `https://<username>.github.io/<repository>/og.jpg`). Chat apps only show the preview picture when that address is complete.
+`og:image` and `og:url` in `index.html` hold the full web address of the hosted game (`https://shaurya2093.github.io/gully-cricket/`). If the game moves to another address, change them to match: chat apps only show the preview picture when that address is complete.
 
 When you publish a new version, raise `VERSION` in `sw.js` so installed copies refresh their offline files.
 
