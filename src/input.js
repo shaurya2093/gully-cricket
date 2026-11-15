@@ -46,8 +46,32 @@ export function setupInput(game, sound, surface) {
     ArrowLeft: -0.6, KeyA: -0.6, ArrowUp: 0, KeyW: 0, Space: 0, Enter: 0, ArrowRight: 0.6, KeyD: 0.6,
     KeyQ: -1.1, KeyE: 1.1
   };
+  // Moving across the crease: hold Z / C (or , / .) or the on-screen arrow buttons.
+  const MOVE_KEYS = { KeyZ: -1, Comma: -1, KeyC: 1, Period: 1 };
+  const heldKeys = new Set();
+  const moveFromKeys = () => {
+    let dir = 0;
+    for (const code of heldKeys) dir += MOVE_KEYS[code];
+    game.moveDir = Math.sign(dir);
+  };
+  for (const [id, dir] of [['moveL', -1], ['moveR', 1]]) {
+    const btn = document.getElementById(id);
+    if (!btn) continue;
+    const stop = () => { if (game.moveDir === dir) game.moveDir = 0; btn.classList.remove('on'); };
+    btn.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      sound.unlock();
+      game.moveDir = dir;
+      btn.classList.add('on');
+      if (btn.setPointerCapture) { try { btn.setPointerCapture(e.pointerId); } catch (err) { /* not supported */ } }
+    });
+    for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) btn.addEventListener(type, stop);
+    btn.addEventListener('contextmenu', (e) => e.preventDefault());
+  }
+
   window.addEventListener('keydown', (e) => {
     if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+    if (e.code in MOVE_KEYS) { heldKeys.add(e.code); moveFromKeys(); return; }
     if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') { game.holdLoft(true); return; }
     if (e.repeat) return;
     if (e.code === 'KeyL') { game.setLoft(!game.loft); return; }
@@ -60,8 +84,9 @@ export function setupInput(game, sound, surface) {
   });
   window.addEventListener('keyup', (e) => {
     if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') game.holdLoft(false);
+    if (e.code in MOVE_KEYS) { heldKeys.delete(e.code); moveFromKeys(); }
   });
-  window.addEventListener('blur', () => game.holdLoft(false));
+  window.addEventListener('blur', () => { game.holdLoft(false); heldKeys.clear(); game.moveDir = 0; });
   document.addEventListener('visibilitychange', () => { if (document.hidden) game.pause(true); });
   window.addEventListener('resize', () => game.resize());
 }

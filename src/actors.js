@@ -148,6 +148,8 @@ export class Batter {
     this.aim = 0;
     this.loft = false;
     this.q = new THREE.Quaternion();
+    this.offset = 0;      // sideways shuffle across the crease
+    this.moving = false;
     this.setHand('R');
   }
 
@@ -155,13 +157,14 @@ export class Batter {
 
   setHand(hand) {
     this.hand = hand === 'L' ? -1 : 1;
-    this.kid.place(-0.4 * this.hand, 0.1);
+    this.kid.place(-0.4 * this.hand + this.offset, 0.1);
     this.kid.group.rotation.y = (Math.PI / 2) * this.hand;
     this.kid.head.rotation.y = (Math.PI / 2) * 0.8 * this.hand;
     this.reset();
   }
 
   reset() { this.mode = 'stance'; this.t = 0; }
+  setOffset(x, moving) { this.offset = x; this.moving = moving; }
   backlift() { if (this.mode === 'stance') { this.mode = 'backlift'; this.t = 0; } }
   swing(aim, loft) { this.mode = 'swing'; this.t = 0; this.aim = aim; this.loft = loft; }
 
@@ -185,7 +188,13 @@ export class Batter {
       else if (this.t < 0.75) { from = 'follow'; to = 'follow'; arms = this.loft ? -2.45 : -1.95; twist = 0.9; }
       else { this.mode = 'stance'; this.t = 0; }
     }
+    k.place(-0.4 * h + this.offset, 0.1);
     k.override = { aLx: arms, aRx: arms, aLz: -0.45, aRz: 0.45, lean: 0.22 };
+    if (this.moving) {
+      // quick little steps while shuffling across
+      const ph = k.time * 20;
+      k.override.legL = Math.sin(ph) * 0.45; k.override.legR = -Math.sin(ph) * 0.45; k.override.y = Math.abs(Math.sin(ph)) * 0.03;
+    }
     const base = (Math.PI / 2) * h;
     const target = base + twist * h * (1 - Math.abs(this.aim) * 0.3);
     k.group.rotation.y += (target - k.group.rotation.y) * Math.min(1, dt * 22);
@@ -218,12 +227,14 @@ export class Bowler {
     this.phase = 'wait';
     this.t = 0;
     this.runTime = 1.25;
+    this.overstep = 0;
     this.home();
   }
 
   home() { this.kid.place(0.55, 17.2); this.kid.state = 'idle'; this.kid.override = null; this.phase = 'wait'; this.kid.group.rotation.y = 0; }
 
-  start() { this.phase = 'run'; this.t = 0; this.kid.place(0.55, 17.2); this.kid.group.rotation.y = 0; }
+  // overstep: extra distance past the crease, used when the ball is a no ball
+  start(overstep = 0) { this.phase = 'run'; this.t = 0; this.overstep = overstep; this.kid.place(0.55, 17.2); this.kid.group.rotation.y = 0; }
 
   // Returns true on the frame the ball should leave the hand.
   update(dt, fielderState) {
@@ -232,7 +243,7 @@ export class Bowler {
     let released = false;
     if (this.phase === 'run') {
       const f = Math.min(1, this.t / this.runTime);
-      k.place(0.55, 17.2 - 4.2 * f);
+      k.place(0.55, 17.2 - (4.2 + this.overstep) * f);
       k.state = 'run';
       const armStart = this.runTime - 0.26;
       if (this.t >= armStart) {
@@ -243,7 +254,7 @@ export class Bowler {
       if (f >= 1) { this.phase = 'follow'; this.t = 0; released = true; }
     } else if (this.phase === 'follow') {
       const a = Math.min(1, this.t / 0.3);
-      k.place(0.55 - 0.05 * a, 13 - 1.8 * a);
+      k.place(0.55 - 0.05 * a, 13 - this.overstep - 1.8 * a);
       k.state = 'run';
       k.override = { aRx: Math.PI + a * 1.7, aLx: 0.4, lean: 0.45 * (1 - a * 0.5) };
       k.cur.aRx = Math.PI + a * 1.7;

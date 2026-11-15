@@ -19,25 +19,25 @@ export function fieldFor(key, skill = 0.78) {
   return [{ ...BOWLER_SPOT }, ...FIELDS[key].map((f) => ({ ...f, skill }))];
 }
 
-export const DAILY = { balls: 24, wickets: 3, medals: { bronze: 28, silver: 46, gold: 64 } };
+export const DAILY = { balls: 24, wickets: 3, medals: { bronze: 32, silver: 53, gold: 74 } };
 
 // 15 chases, each a little harder than the last.
 export const LEVELS = [
   { name: 'First Evening', theme: 'day', need: 12, balls: 12, wickets: 3, bowlers: ['rookie'], field: 'ring', window: 1.3, tip: 'Tap as the ball arrives. Straight shots are safest.' },
-  { name: 'Chai Break', theme: 'day', need: 20, balls: 12, wickets: 3, bowlers: ['rookie', 'medium'], field: 'spread', window: 1.25, tip: 'Turn on LOFT and hit straight over the far wall for six.' },
-  { name: 'Tuition Bunk', theme: 'day', need: 22, balls: 12, wickets: 3, bowlers: ['medium'], field: 'spread', window: 1.2, tip: 'Past the chalk lines scores 1, 2 and 3.' },
-  { name: 'Swing Uncle', theme: 'day', need: 24, balls: 12, wickets: 2, bowlers: ['swing'], field: 'ring', window: 1.15, tip: 'Swing bends the ball in the air. Watch it all the way.' },
-  { name: 'Spin Trap', theme: 'dusk', need: 24, balls: 12, wickets: 2, bowlers: ['spin'], field: 'straight', window: 1.15, tip: 'Spin is slow. Wait for it.' },
-  { name: 'Power Cut', theme: 'blackout', need: 36, balls: 18, wickets: 3, bowlers: ['medium', 'swing', 'spin'], field: 'deep', window: 1.1, tip: 'The lights are out. Deep fielders catch mistimed lofts, so keep it on the ground.' },
-  { name: 'Rocket Raju', theme: 'day', need: 26, balls: 12, wickets: 2, bowlers: ['fast'], field: 'spread', window: 1.1, tip: 'No bounce marker against express pace.' },
-  { name: 'Sunday Final', theme: 'day', need: 44, balls: 18, wickets: 3, bowlers: ['swing', 'fast', 'spin'], field: 'packed', window: 1.05, tip: 'Four fielders now. Find the gaps.' },
-  { name: 'Monsoon Cup', theme: 'dusk', need: 30, balls: 12, wickets: 2, bowlers: ['mixed'], field: 'deep', window: 1.05, tip: 'Slower balls arrive late. Do not swing early.' },
-  { name: 'Last Light', theme: 'dusk', need: 16, balls: 6, wickets: 1, bowlers: ['medium'], field: 'wall', window: 1.0, tip: 'One over, one wicket. Sixteen to win.' },
-  { name: 'Colony Derby', theme: 'day', need: 56, balls: 24, wickets: 3, bowlers: ['swing', 'spin', 'fast', 'mixed'], field: 'packed', window: 1.0, tip: 'A full daily-length chase.' },
-  { name: 'Bhaiya Arrives', theme: 'dusk', need: 30, balls: 12, wickets: 2, bowlers: ['ace'], field: 'spread', window: 0.97, tip: 'The big brother bowls everything.' },
-  { name: 'Diwali Night', theme: 'night', festive: true, need: 50, balls: 18, wickets: 2, bowlers: ['fast', 'mixed', 'ace'], field: 'deep', window: 0.95, tip: 'Festival night. Sixes over the roofs count too, but avoid the red houses.' },
-  { name: 'Six or Nothing', theme: 'night', need: 20, balls: 6, wickets: 1, bowlers: ['mixed'], field: 'wall', window: 0.95, tip: 'Four boundary riders. Only sixes will do.' },
-  { name: 'Gully Legend', theme: 'night', festive: true, need: 78, balls: 30, wickets: 3, bowlers: ['ace', 'mixed', 'fast', 'swing', 'ace'], field: 'packed', window: 0.9, tip: 'Five overs against the best. Good luck.' }
+  { name: 'Chai Break', theme: 'day', need: 22, balls: 12, wickets: 3, bowlers: ['rookie', 'medium'], field: 'spread', window: 1.25, tip: 'Turn on LOFT and hit straight over the far wall for six.' },
+  { name: 'Tuition Bunk', theme: 'day', need: 24, balls: 12, wickets: 3, bowlers: ['medium'], field: 'spread', window: 1.2, tip: 'Shuffle across your crease with the arrow buttons (or Z and C) to reach wide balls.' },
+  { name: 'Swing Uncle', theme: 'day', need: 26, balls: 12, wickets: 2, bowlers: ['swing'], field: 'ring', window: 1.15, tip: 'Swing bends the ball in the air. Watch it all the way.' },
+  { name: 'Spin Trap', theme: 'dusk', need: 27, balls: 12, wickets: 2, bowlers: ['spin'], field: 'straight', window: 1.15, tip: 'Spin is slow. Wait for it.' },
+  { name: 'Power Cut', theme: 'blackout', need: 40, balls: 18, wickets: 3, bowlers: ['medium', 'swing', 'spin'], field: 'deep', window: 1.1, tip: 'The lights are out. Deep fielders catch mistimed lofts, so keep it on the ground.' },
+  { name: 'Rocket Raju', theme: 'day', need: 29, balls: 12, wickets: 2, bowlers: ['fast'], field: 'spread', window: 1.1, tip: 'No bounce marker against express pace.' },
+  { name: 'Sunday Final', theme: 'day', need: 49, balls: 18, wickets: 3, bowlers: ['swing', 'fast', 'spin'], field: 'packed', window: 1.05, tip: 'Four fielders now. Find the gaps.' },
+  { name: 'Monsoon Cup', theme: 'dusk', need: 34, balls: 12, wickets: 2, bowlers: ['mixed'], field: 'deep', window: 1.05, tip: 'Slower balls arrive late. Do not swing early.' },
+  { name: 'Last Light', theme: 'dusk', need: 18, balls: 6, wickets: 1, bowlers: ['medium'], field: 'wall', window: 1.0, tip: 'One over, one wicket. Eighteen to win.' },
+  { name: 'Colony Derby', theme: 'day', need: 63, balls: 24, wickets: 3, bowlers: ['swing', 'spin', 'fast', 'mixed'], field: 'packed', window: 1.0, tip: 'A full daily-length chase.' },
+  { name: 'Bhaiya Arrives', theme: 'dusk', need: 34, balls: 12, wickets: 2, bowlers: ['ace'], field: 'spread', window: 0.97, tip: 'The big brother bowls everything.' },
+  { name: 'Diwali Night', theme: 'night', festive: true, need: 56, balls: 18, wickets: 2, bowlers: ['fast', 'mixed', 'ace'], field: 'deep', window: 0.95, tip: 'Festival night. Sixes over the roofs count too, but avoid the red houses.' },
+  { name: 'Six or Nothing', theme: 'night', need: 22, balls: 6, wickets: 1, bowlers: ['mixed'], field: 'wall', window: 0.95, tip: 'Four boundary riders. Only sixes will do.' },
+  { name: 'Gully Legend', theme: 'night', festive: true, need: 88, balls: 30, wickets: 3, bowlers: ['ace', 'mixed', 'fast', 'swing', 'ace'], field: 'packed', window: 0.9, tip: 'Five overs against the best. Good luck.' }
 ];
 
 const DAILY_OVERS = [['medium', 'swing'], ['spin', 'swing'], ['fast', 'mixed'], ['mixed', 'ace']];
@@ -92,6 +92,8 @@ export class Match {
     this.bestSixStreak = 0;
     this.windows = 0;
     this.caughtOuts = 0;
+    this.extras = 0;     // runs from wides and no balls
+    this.freeHit = false; // the next ball is a free hit
     this.over = [];      // labels for the balls of the current over
     this.log = [];
     this.finished = false;
@@ -130,14 +132,18 @@ export class Match {
     this.seq++;
     const diff = this.difficulty();
     const delivery = makeDelivery(rng, this.bowler(), diff.speed);
-    return new Play({ delivery, field: fieldFor(diff.field, diff.skill), rng, hand, windowScale: diff.window });
+    return new Play({ delivery, field: fieldFor(diff.field, diff.skill), rng, hand, windowScale: diff.window, freeHit: this.freeHit });
   }
 
   apply(o) {
-    const entry = { runs: o.runs, out: o.out, wide: o.wide, boundary: o.boundary, timing: o.timing };
+    const entry = { runs: o.runs, out: o.out, wide: o.wide, noBall: !!o.noBall, saved: o.saved || null, boundary: o.boundary, timing: o.timing };
     this.log.push(entry);
     this.runs += o.runs;
     if (o.legal) this.legal++;
+    if (o.wide || o.noBall) this.extras++;
+    // A no ball earns a free hit. It stays in force until a legal ball has been bowled.
+    if (o.noBall) this.freeHit = true;
+    else if (o.legal) this.freeHit = false;
     if (o.boundary === 4) this.fours++;
     if (o.boundary === 6) { this.sixes++; this.sixStreak++; this.bestSixStreak = Math.max(this.bestSixStreak, this.sixStreak); }
     else if (o.legal) this.sixStreak = 0;
@@ -147,7 +153,7 @@ export class Match {
     if (o.out === 'caught' || o.out === 'onetip') this.caughtOuts++;
     if (o.out && this.cfg.wickets !== Infinity) this.wickets++;
 
-    this.over.push(o.out ? 'W' : o.wide ? 'wd' : String(o.runs));
+    this.over.push(o.out ? 'W' : o.wide ? 'wd' : o.noBall ? (o.runs > 1 ? o.runs - 1 + 'nb' : 'nb') : String(o.runs));
     const overDone = o.legal && this.legal % 6 === 0;
     const res = { overDone, finished: false };
     if (this.cfg.target && this.runs >= this.cfg.target) this.end('won');

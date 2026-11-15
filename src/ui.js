@@ -132,7 +132,7 @@ export class UI {
       ${this.weekStrip(today)}
       <div class="modes">
         <button data-act="levels"><b>Chase</b><span>${won}/${LEVELS.length} levels won</span></button>
-        <button data-act="superover"><b>Super Over</b><span>${d.superBest ? 'Best ' + d.superBest + ' of ' + SUPER_OVER.max : 'Six balls, go big'}</span></button>
+        <button data-act="superover"><b>Super Over</b><span>${d.superBest ? 'Best ' + d.superBest : 'Six balls, go big'}</span></button>
         <button data-act="survival"><b>Survival</b><span>${d.survivalBest ? 'Best ' + d.survivalBest : 'Bat till 3 wickets fall'}</span></button>
         <button data-act="practice"><b>Practice</b><span>No wickets, no pressure</span></button>
       </div>
@@ -166,6 +166,7 @@ export class UI {
         <li><b>Time it.</b> Swing just as the ball reaches the batter. On a phone, swipe up. On a keyboard, press an arrow key or Space.</li>
         <li><b>Aim it.</b> Swipe left, straight or right (or use &larr; &uarr; &rarr;) to choose where the ball goes. Prefer tapping? Switch to Tap controls in Settings.</li>
         <li><b>Loft it.</b> Turn on <b>LOFT</b> (or hold Shift) to hit in the air. Lofts score sixes but can be caught.</li>
+        <li><b>Move.</b> Hold the arrow buttons at the bottom right (or Z and C) to shuffle across your crease and reach a wide ball or make room.</li>
         <li><b>Read it.</b> A yellow mark shows where the ball will bounce. In practice and the first levels, a ring closes when it is time to swing.</li>
       </ol>
       <h3>Gully rules</h3>
@@ -175,6 +176,8 @@ export class UI {
         <li>Break a window and you are <b>out</b>.</li>
         <li><b>One tip, one hand:</b> a fielder can catch you after one bounce.</li>
         <li>Miss a straight one and you are <b>bowled</b>.</li>
+        <li><b>Wide:</b> a ball outside the chalk wide lines that you do not hit is +1 and bowled again.</li>
+        <li><b>No ball:</b> +1, you cannot be out off it, and the next ball is a <b>free hit</b> where you cannot be out either.</li>
       </ul>
       <button class="btn primary" data-act="home">${first ? "Let's play" : 'Got it'}</button>`);
   }
@@ -288,7 +291,8 @@ export class UI {
     $('hud').hidden = false;
     $('pause').hidden = true;
     $('hTitle').textContent = match.cfg.title;
-    $('banner').className = ''; $('timing').className = '';
+    $('banner').className = ''; $('timing').className = ''; $('call').className = '';
+    this.setFreeHit(false);
     this.updateHud(match);
   }
 
@@ -316,14 +320,14 @@ export class UI {
       pct = best ? m.runs / best : 0;
     } else if (cfg.mode === 'superover') {
       const best = this.store.data.superBest;
-      goal = best ? `Best ${best}` : 'Max ' + SUPER_OVER.max;
+      goal = best ? `Best ${best}` : 'Six sixes is ' + SUPER_OVER.max;
       pct = m.runs / (best || SUPER_OVER.max);
     } else goal = 'Free hit practice';
     $('hGoal').textContent = goal;
     $('hBar').style.width = Math.round(Math.max(0, Math.min(1, pct)) * 100) + '%';
     const lives = cfg.wickets === Infinity ? '' : '<i class="life"></i>'.repeat(Math.max(0, m.wicketsLeft)) + '<i class="life gone"></i>'.repeat(m.wickets);
     $('hLives').innerHTML = lives;
-    $('hOver').innerHTML = m.over.map((b) => `<i class="${b === 'W' ? 'w' : b === '6' ? 'six' : b === '4' ? 'four' : b === '0' ? 'dot' : ''}">${b === '0' ? '&middot;' : b}</i>`).join('');
+    $('hOver').innerHTML = m.over.map((b) => `<i class="${b === 'W' ? 'w' : /nb|wd/.test(b) ? 'extra' : b === '6' ? 'six' : b === '4' ? 'four' : b === '0' ? 'dot' : ''}">${b === '0' ? '&middot;' : b}</i>`).join('');
   }
 
   pulse(id, cls, ms) {
@@ -346,6 +350,14 @@ export class UI {
     $('timing').innerHTML = `<b>${names[label] || ''}</b><div class="meter"><u></u><i style="left:${50 + pos * 50}%"></i></div><small><span>early</span><span>late</span></small>`;
     this.pulse('timing', 'show ' + label, 1300);
   }
+
+  // A short call at the top of the screen, such as a no ball.
+  call(title, sub) {
+    $('call').innerHTML = `<b>${esc(title)}</b><span>${esc(sub)}</span>`;
+    this.pulse('call', 'show', 1700);
+  }
+
+  setFreeHit(on) { $('freeHit').hidden = !on; }
 
   overCard(title, sub) {
     $('overCard').innerHTML = `<b>${esc(title)}</b><span>${esc(sub)}</span>`;
@@ -402,7 +414,7 @@ export class UI {
       buttons = '<button class="btn primary" data-act="again">Play again</button><button class="btn" data-act="share">Share score</button>' + this.whatsappButton();
     } else if (cfg.mode === 'superover') {
       const perfect = m.runs >= SUPER_OVER.max;
-      head = `<p class="sub">${perfect ? 'A perfect over. Six sixes!' : r.newBest ? 'New personal best!' : 'Best: ' + d.superBest + ' of ' + SUPER_OVER.max}</p>`;
+      head = `<p class="sub">${perfect ? 'Six sixes or better. A perfect over!' : r.newBest ? 'New personal best!' : 'Best: ' + d.superBest}</p>`;
       buttons = '<button class="btn primary" data-act="again">Another over</button><button class="btn" data-act="share">Share score</button>' + this.whatsappButton();
     }
     const ach = r.unlocked.map((a) => `<li><i></i><b>${esc(a.name)}</b> ${esc(a.desc)}</li>`).join('');
@@ -439,7 +451,8 @@ export class UI {
       const link = base ? `\nBeat me: ${base}#beat-${cfg.day}-${m.runs}${name ? '-' + name : ''}` : '';
       return `Gully Sixes Daily #${cfg.day + 1} 🏏\n${m.runs}/${m.wickets} in ${m.oversText} overs ${icon}\n6️⃣ x${m.sixes}  4️⃣ x${m.fours}${link}`;
     }
-    const balls = m.log.filter((b) => !b.wide).map((b) => (b.out ? '🔴' : b.runs === 6 ? '6️⃣' : b.runs === 4 ? '4️⃣' : b.runs === 0 ? '⚪' : b.runs + '️⃣')).join('');
+    // one symbol per ball faced; wides are left out and a no ball shows what the bat scored
+    const balls = m.log.filter((b) => !b.wide).map((b) => { const r = b.noBall ? b.runs - 1 : b.runs; return b.out ? '🔴' : r === 6 ? '6️⃣' : r === 4 ? '4️⃣' : r === 0 ? '⚪' : r + '️⃣'; }).join('');
     if (cfg.mode === 'superover') return `Gully Sixes Super Over 🏏\n${m.runs} off ${m.legal} balls\n${balls}${base ? '\nCan you beat it? ' + base : ''}`;
     return `Gully Sixes Survival 🏏\n${m.runs} runs, ${m.sixes} sixes${base ? '\nCan you beat it? ' + base : ''}`;
   }

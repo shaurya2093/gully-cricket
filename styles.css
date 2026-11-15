@@ -52,6 +52,17 @@ button:focus-visible, input:focus-visible { outline: 3px solid #fff; outline-off
 .chips i.six { background: var(--saffron); border-color: transparent; }
 .chips i.w { background: var(--red); border-color: transparent; }
 .chips i.dot { color: rgba(255, 255, 255, 0.7); }
+.chips i.extra { background: #6a59c9; border-color: transparent; font-size: 0.72rem; }
+#freeHit { width: max-content; margin: 8px auto 0; padding: 4px 16px; border-radius: 999px; background: var(--gold); color: var(--ink); font-family: var(--display); font-size: 0.85rem; letter-spacing: 0.08em; box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35); animation: throb 0.9s ease-in-out infinite; }
+@keyframes throb { 50% { transform: scale(1.08); } }
+#call { position: fixed; left: 50%; top: 17%; transform: translateX(-50%); text-align: center; opacity: 0; pointer-events: none; padding: 8px 18px; border-radius: 14px; background: rgba(216, 64, 47, 0.94); border: 2px solid #fff; white-space: nowrap; }
+#call b { display: block; font-family: var(--display); font-size: 1.3rem; letter-spacing: 0.04em; }
+#call span { font-size: 0.85rem; font-weight: 700; }
+#call.show { animation: fade 1.7s ease both; }
+.move { position: fixed; right: calc(14px + env(safe-area-inset-right, 0px)); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); display: none; gap: 10px; }
+#hud .move button { width: 66px; height: 66px; border-radius: 50%; background: rgba(15, 20, 32, 0.72); border: 3px solid rgba(255, 255, 255, 0.5); color: #fff; font-size: 1.25rem; touch-action: none; }
+#hud .move button.on { background: var(--teal); border-color: #fff; }
+@media (pointer: coarse) { .move { display: flex; } }
 
 #banner, #timing, #overCard, #hint, #toast { position: fixed; left: 50%; transform: translateX(-50%); text-align: center; opacity: 0; pointer-events: none; }
 #banner { top: 24%; width: 92%; }
@@ -233,8 +244,11 @@ a.btn { text-decoration: none; text-align: center; }
   .logo span { font-size: 2.6rem; }
   #banner { top: 18%; }
   #loftBtn { width: 76px; height: 76px; }
+  #hud .move button { width: 56px; height: 56px; }
+  #call { top: 26%; }
   #hint { bottom: 110px; }
 }
 @media (prefers-reduced-motion: reduce) {
   #banner.show { animation: fade 1.5s ease both; }
+  #freeHit { animation: none; }
 }

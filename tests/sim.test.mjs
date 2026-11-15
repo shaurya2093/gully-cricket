@@ -5,7 +5,7 @@ import { BOWLERS, makeDelivery } from '../src/deliveries.js';
 import { Play } from '../src/sim.js';
 import { Match, dailyConfig, chaseConfig, survivalConfig, practiceConfig, superOverConfig, SUPER_OVER, LEVELS, FIELDS, fieldFor, DAILY } from '../src/modes.js';
 import { Store, dayNumber, BATS, ACHIEVEMENTS } from '../src/store.js';
-import { TIMING, PITCH, STREET, RUN_LINES } from '../src/config.js';
+import { TIMING, PITCH, STREET, RUN_LINES, WIDE_X } from '../src/config.js';
 import { HOUSES, buildingAt, windowAt } from '../src/street.js';
 import { playMatch, playBall, BOTS } from '../tools/calibrate.mjs';
 
@@ -44,7 +44,8 @@ test('every bowler produces playable deliveries', () => {
       assert(d.tIdeal > 0.3 && d.tIdeal < 1.7, key + ' flight time ' + d.tIdeal);
       assert(d.tStumps > d.tIdeal, 'stumps come after the contact point');
       assert(d.contactY > 0 && d.contactY < 1.9, key + ' height ' + d.contactY);
-      assert(Math.abs(d.bounceX) <= 1.25);
+      if (d.wideBall) assert(Math.abs(d.creaseX) > WIDE_X && Math.abs(d.creaseX) < 1.6, key + ' wide crosses at ' + d.creaseX);
+      else assert(Math.abs(d.creaseX) <= 0.95, key + ' ordinary ball stays inside the wide line: ' + d.creaseX);
       assert(d.bounceZ > PITCH.idealZ, 'ball bounces before it reaches the bat');
     }
   }
@@ -80,7 +81,8 @@ test('leaving a straight ball gets you bowled, leaving a wide one does not', () 
     const p = mk(s);
     const hits = p.d.hitsStumps;
     const o = run(p, null);
-    assert.strictEqual(o.out === 'bowled', hits);
+    assert.strictEqual(o.out === 'bowled' || o.saved === 'bowled', hits);
+    assert.strictEqual(o.out === 'bowled', hits && !p.d.noBall, 'bowled does not count off a no ball');
     assert.strictEqual(o.timing, null);
     if (hits) bowled++;
     checked++;
@@ -93,7 +95,7 @@ test('swinging far too early or too late misses', () => {
     assert.strictEqual(run(mk(s), -0.3).timing, 'early');
     const late = run(mk(s), 0.2);
     assert.strictEqual(late.timing, 'late');
-    assert(late.runs === 0 || late.wide);
+    assert(late.runs === 0 || late.wide || late.noBall);
   }
 });
 
@@ -117,11 +119,15 @@ test('outcomes are always well formed and runs are legal values', () => {
     const m = new Match(dailyConfig(i % 40));
     m.seq = i;
     const o = playBall(m, BOTS.casual, rng);
-    assert([0, 1, 2, 3, 4, 6].includes(o.runs), 'runs ' + o.runs);
+    const bat = o.noBall ? o.runs - 1 : o.runs;      // a no ball adds one penalty run
+    assert([0, 1, 2, 3, 4, 6].includes(bat), 'runs ' + o.runs);
     assert([null, 'bowled', 'caught', 'onetip', 'window', 'lost'].includes(o.out), 'out ' + o.out);
     if (o.out) assert.strictEqual(o.runs, 0);
-    if (o.boundary) assert.strictEqual(o.runs, o.boundary);
-    if (o.wide) assert(!o.legal && o.runs === 1);
+    if (o.out) assert(!o.noBall && !o.freeHit, 'no wicket off a no ball or a free hit');
+    if (o.boundary) assert.strictEqual(bat, o.boundary);
+    if (o.wide) assert(!o.legal && o.runs === 1 && !o.noBall);
+    if (o.noBall) assert(!o.legal && o.runs >= 1);
+    if (o.saved) assert(o.out === null && (o.noBall || o.freeHit));
     seen.add(o.out || 'r' + o.runs);
   }
   for (const k of ['r0', 'r1', 'r2', 'r4', 'r6', 'bowled', 'caught']) assert(seen.has(k), 'never saw ' + k);
@@ -212,12 +218,13 @@ test('saved progress: coins, medals, streaks, shop and bad data', () => {
   const store = new Store(st);
   const today = 20;
   const play = (runs) => { const m = new Match(dailyConfig(today)); m.runs = runs; m.legal = 24; m.reason = 'overs'; m.finished = true; m.dots = 1; return m; };
-  let r = store.record(play(30), today);
-  assert.strictEqual(r.medal, 'bronze'); assert(r.newMedal); assert.strictEqual(r.coins, 45); assert.strictEqual(r.streak, 1);
-  r = store.record(play(70), today);
-  assert.strictEqual(r.medal, 'gold'); assert.strictEqual(r.coins, 70 + 45); assert(r.newBest); assert.strictEqual(r.streak, 1);
+  const bronzeRuns = DAILY.medals.bronze + 2, goldRuns = DAILY.medals.gold + 6;
+  let r = store.record(play(bronzeRuns), today);
+  assert.strictEqual(r.medal, 'bronze'); assert(r.newMedal); assert.strictEqual(r.coins, bronzeRuns + 15); assert.strictEqual(r.streak, 1);
+  r = store.record(play(goldRuns), today);
+  assert.strictEqual(r.medal, 'gold'); assert.strictEqual(r.coins, goldRuns + 45); assert(r.newBest); assert.strictEqual(r.streak, 1);
   r = store.record(play(10), today);
-  assert(!r.newMedal && !r.newBest); assert.strictEqual(store.data.daily[today].best, 70); assert.strictEqual(store.data.daily[today].tries, 3);
+  assert(!r.newMedal && !r.newBest); assert.strictEqual(store.data.daily[today].best, goldRuns); assert.strictEqual(store.data.daily[today].tries, 3);
   const next = new Match(dailyConfig(today + 1)); next.runs = 5;
   assert.strictEqual(store.record(next, today + 1).streak, 2);
   assert.strictEqual(store.dailyStreak(today + 3), 0, 'streak lapses after a missed day');
@@ -251,6 +258,80 @@ test('saved progress: coins, medals, streaks, shop and bad data', () => {
   assert.strictEqual(BATS[0].cost, 0);
 });
 
+// Finds a delivery of a given kind by trying seeds.
+function findPlay(want, opts = {}) {
+  for (let s = 1; s < 4000; s++) {
+    const rng = new RNG(s);
+    const d = makeDelivery(rng, BOWLERS[opts.bowler || 'medium']);
+    if (want(d)) return new Play({ delivery: d, field: opts.field || [], rng, windowScale: 1, freeHit: !!opts.freeHit });
+  }
+  throw new Error('no such delivery');
+}
+
+test('wides: called when the ball is not hit, whether or not the batter swings', () => {
+  const isWide = (d) => d.wideBall && !d.noBall;
+  const left = run(findPlay(isWide), null);
+  assert(left.wide && !left.legal && left.runs === 1 && !left.out);
+  const swung = run(findPlay(isWide), 0, 0, false);
+  assert(swung.wide && swung.runs === 1, 'a swing and a miss at a wide is still a wide');
+  // every bowler bowls some extras, but not many
+  for (const key of Object.keys(BOWLERS)) {
+    const rng = new RNG(3);
+    let wides = 0, nbs = 0;
+    for (let i = 0; i < 3000; i++) { const d = makeDelivery(rng, BOWLERS[key]); if (d.wideBall) wides++; if (d.noBall) nbs++; }
+    assert(wides > 30 && wides < 300, key + ' wides ' + wides);
+    assert(nbs > 15 && nbs < 300, key + ' no balls ' + nbs);
+  }
+});
+
+test('stance: stepping across reaches a wide ball, and standing still does not', () => {
+  const offWide = (d) => d.wideBall && !d.noBall && d.contactX > 1.15 && d.contactX < 1.45;
+  const still = findPlay(offWide);
+  assert(run(still, 0, 0.4, false).wide, 'out of reach from the normal stance');
+  const moved = findPlay(offWide);
+  moved.stanceX = 0.55;
+  const o = run(moved, 0, 0.4, false);
+  assert(!o.wide && o.timing === 'perfect', 'reachable after moving across: ' + JSON.stringify(o));
+  // moving away from a straight ball puts it out of reach
+  const straight = (d) => !d.wideBall && !d.noBall && Math.abs(d.contactX) < 0.1 && d.hitsStumps;
+  const away = findPlay(straight);
+  away.stanceX = -0.55;
+  const far = findPlay((d) => !d.wideBall && !d.noBall && d.contactX > 0.5);
+  far.stanceX = -0.55;
+  assert.strictEqual(run(far, 0, 0, false).timing, 'miss');
+  assert.notStrictEqual(run(away, 0, 0, false).timing, 'miss', 'a straight ball is still within reach');
+});
+
+test('no balls: one extra run, cannot be out, and the next ball is a free hit', () => {
+  const nbStraight = (d) => d.noBall && !d.wideBall && d.hitsStumps;
+  const o = run(findPlay(nbStraight), null);
+  assert(o.noBall && !o.legal && o.runs === 1 && o.out === null && o.saved === 'bowled', JSON.stringify(o));
+  const hit = run(findPlay((d) => d.noBall && !d.wideBall && Math.abs(d.contactX) < 0.4), 0, 0, true);
+  assert(hit.noBall && hit.runs >= 1 && (!hit.boundary || hit.runs === hit.boundary + 1));
+
+  const cfg = { mode: 'practice', seed: 1, balls: 12, wickets: 3, bowlers: ['medium'], field: 'spread', window: 1 };
+  const m = new Match(cfg);
+  m.apply({ runs: 5, out: null, wide: false, noBall: true, legal: false, boundary: 4, timing: 'good', saved: null });
+  assert.strictEqual(m.runs, 5);
+  assert.strictEqual(m.legal, 0, 'a no ball is bowled again');
+  assert.strictEqual(m.freeHit, true);
+  assert.strictEqual(m.fours, 1);
+  assert.deepStrictEqual(m.over, ['4nb']);
+  assert.strictEqual(m.nextPlay('R').freeHit, true, 'the next ball is a free hit');
+  m.apply({ runs: 1, out: null, wide: true, legal: false, boundary: 0, timing: null });
+  assert.strictEqual(m.freeHit, true, 'a wide does not use up the free hit');
+  m.apply({ runs: 0, out: null, wide: false, legal: true, boundary: 0, timing: 'late', saved: 'bowled', freeHit: true });
+  assert.strictEqual(m.wickets, 0, 'bowled on a free hit is not out');
+  assert.strictEqual(m.freeHit, false, 'the free hit is used by a legal ball');
+  assert.strictEqual(m.legal, 1);
+  assert.strictEqual(m.extras, 2);
+
+  // a free hit protects the batter in the simulation too
+  const fh = findPlay((d) => !d.noBall && !d.wideBall && d.hitsStumps, { freeHit: true });
+  const saved = run(fh, null);
+  assert(saved.out === null && saved.saved === 'bowled' && saved.legal && saved.runs === 0);
+});
+
 test('super over: six balls, two wickets, best score is saved', () => {
   const a = superOverConfig(42), b = superOverConfig(42);
   assert.deepStrictEqual(a, b, 'same seed gives the same over');
@@ -262,7 +343,7 @@ test('super over: six balls, two wickets, best score is saved', () => {
   const store = new Store(null);
   const rng = new RNG(3);
   const m1 = playMatch(superOverConfig(7), BOTS.expert, rng);
-  assert(m1.finished && m1.legal <= 6 && m1.runs <= 36);
+  assert(m1.finished && m1.legal <= 6 && m1.runs <= 6 * 7 + 12, 'six legal balls, plus whatever extras add');
   const r1 = store.record(m1, 0);
   assert.strictEqual(store.data.superBest, m1.runs);
   assert.strictEqual(r1.newBest, false, 'the first score is not announced as a new best');

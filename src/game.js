@@ -37,6 +37,8 @@ const LINES = {
   leave: ['Left alone', 'Watching it go by']
 };
 
+const SAVED = { bowled: 'Bowled', caught: 'The catch', onetip: 'The catch', window: 'The broken window', lost: 'The lost ball' };
+
 // Dust, sparks, glass and fireworks: one instanced mesh, so any number of particles is one draw call.
 class Particles {
   constructor(scene, count = 240) {
@@ -111,6 +113,8 @@ export class Game {
     this.fw = 0;
     this.fwT = 0;
     this.guide = false;
+    this.stance = 0;         // how far the batter has shuffled across the crease, in metres
+    this.moveDir = 0;        // -1, 0 or 1 while a move button or key is held
     this.auto = null;        // test hook: plays shots automatically
     this.onMatchEnd = null;
     this.pendingAfter = null;
@@ -264,6 +268,9 @@ export class Game {
     this.batter.reset();
     this.world.resetStumps();
     this.world.setTheme(this.clockTheme(), { instant: true });
+    this.stance = 0;
+    this.batter.setOffset(0, false);
+    this.ui.setFreeHit(false);
     const spots = [[-3.2, 12.5], [3.3, 16.5], [-0.9, 25], [2.2, 8], [-2.6, 20]];
     this.fielders.forEach((k, i) => { k.group.visible = i < 4; k.place(spots[i][0], spots[i][1]); k.state = 'idle'; k.group.rotation.y = 0; });
   }
@@ -279,6 +286,7 @@ export class Game {
     this.paused = false;
     this.pendingAfter = null;
     this.fw = 0;
+    this.stance = 0;
     const st = this.store.data;
     this.guide = st.settings.guide !== false && (cfg.mode === 'practice' || (cfg.mode === 'chase' && cfg.level < 3) || st.stats.innings < 2);
     this.ui.showHud(this.match);
@@ -298,6 +306,8 @@ export class Game {
 
   beginBall() {
     this.play = this.match.nextPlay(this.hand);
+    this.play.stanceX = this.stance;
+    this.ui.setFreeHit(this.play.freeHit);
     this.outcomeShown = false;
     const fs = this.play.fielders;
     this.fielders.forEach((k, i) => {
@@ -307,7 +317,7 @@ export class Game {
     });
     this.world.resetStumps();
     this.batter.reset();
-    this.bowler.start();
+    this.bowler.start(this.play.d.noBall ? 0.45 : 0);
     this.ball.visible = false; this.blob.visible = false;
     this.hideTrail();
     this.marker.visible = false;
@@ -405,6 +415,7 @@ export class Game {
         this.stateT = 0;
         this.ball.visible = true; this.blob.visible = true;
         const d = play.d;
+        if (d.noBall) { this.ui.call('NO BALL!', 'Free hit next ball'); this.sound.call(); this.buzz(40); }
         if (d.marker) { this.marker.visible = true; this.marker.position.set(d.bounceX, 0.03, -d.bounceZ); }
         if (this.guide) {
           const y = clamp(d.contactY, 0.3, 1.5);
@@ -431,6 +442,19 @@ export class Game {
         this.pendingAfter = null;
       }
     }
+
+    // The batter can shuffle across the crease until the bat has started to swing.
+    let moving = false;
+    if (this.moveDir && this.match && this.state !== 'ended') {
+      const free = this.state !== 'live' || (play && play.phase === 'flight' && !play.swing);
+      if (free) {
+        const next = clamp(this.stance + this.moveDir * 1.5 * dt, -0.55, 0.55);
+        moving = next !== this.stance;
+        this.stance = next;
+      }
+    }
+    this.batter.setOffset(this.stance, moving);
+    if (play) play.stanceX = this.stance;
 
     if (!bowlerDone) this.bowler.update(dt, play && this.state === 'live' ? play.fielders[0] : null);
     this.batter.update(dt);
@@ -535,17 +559,25 @@ export class Game {
       this.fielders.forEach((k, i) => { if (k.group.visible && this.play.fielders[i + 1] && this.play.fielders[i + 1].state !== 'catch') k.state = 'celebrate'; });
     } else if (o.boundary === 6) {
       kind = 'six'; text = 'SIX!';
-      sub = m.sixStreak >= 2 ? m.sixStreak + ' sixes in a row' : this.line(o.roof ? 'sixRoof' : 'six');
+      sub = o.noBall ? 'Off a no ball: 7 runs and a free hit' : m.sixStreak >= 2 ? m.sixStreak + ' sixes in a row' : this.line(o.roof ? 'sixRoof' : 'six');
       this.sound.cheer(true);
       this.buzz([25, 30, 60]);
       this.particles.burst(this.ball.position.x, Math.max(2, this.ball.position.y), this.ball.position.z, { color: ['#ff7a3d', '#ffd23f', '#2e9c8f', '#e2452f', '#5b8def'], n: 30, speed: 4.5, size: 0.09, life: 1.4, g: 5 });
       if (this.world.dark) this.fireworks(m.sixStreak >= 2 ? 5 : 3);
       this.fielders.forEach((k) => { if (k.group.visible) k.state = 'sad'; });
     } else if (o.boundary === 4) {
-      kind = 'four'; text = 'FOUR!'; sub = this.line(o.roof ? 'fourRoof' : 'four');
+      kind = 'four'; text = 'FOUR!'; sub = o.noBall ? 'Off a no ball: 5 runs and a free hit' : this.line(o.roof ? 'fourRoof' : 'four');
       this.sound.cheer(false);
     } else if (o.wide) {
       text = 'WIDE'; sub = '+1 and the ball is bowled again';
+    } else if (o.saved) {
+      // What would have been a wicket does not count off a no ball or on a free hit.
+      text = 'NOT OUT!';
+      sub = SAVED[o.saved] + ' does not count ' + (o.noBall ? 'off a no ball. Free hit next' : 'on a free hit');
+      this.sound.run();
+    } else if (o.noBall) {
+      text = 'NO BALL'; sub = (o.runs > 1 ? o.runs + ' runs in all. ' : '+1. ') + 'Free hit next ball';
+      this.sound.run();
     } else if (o.runs > 0) {
       text = o.runs + (o.runs === 1 ? ' RUN' : ' RUNS'); this.sound.run();
     } else {
@@ -611,8 +643,10 @@ export class Game {
 
   updateCamera(dt) {
     const hs = this.handSign;
-    const pos = P.set(0.45 * hs, 2.15, 4.7);
-    const look = S.set(0, 0.95, -9);
+    // the camera slides with the batter so the ball is never hidden behind them
+    const camX = 0.45 * hs + this.stance * 0.8;
+    const pos = P.set(camX, 2.15, 4.7);
+    const look = S.set(this.stance * 0.45, 0.95, -9);
     let rate = 3.5;
     if (this.state === 'menu' || this.state === 'ended') {
       const a = this.time * 0.12;
@@ -622,7 +656,7 @@ export class Game {
     } else if (this.play && (this.play.phase === 'struck' || (this.play.phase !== 'flight' && this.play.struckT > 0))) {
       const b = this.play.ball;
       const bz = Math.max(0, b.z);
-      pos.set(0.45 * hs + b.x * 0.22, 2.15 + Math.min(3.2, b.y * 0.22 + bz * 0.03), 4.7 - Math.min(7.5, bz * 0.3));
+      pos.set(camX + b.x * 0.22, 2.15 + Math.min(3.2, b.y * 0.22 + bz * 0.03), 4.7 - Math.min(7.5, bz * 0.3));
       look.set(b.x * 0.85, Math.max(0.6, b.y * 0.85), -Math.max(4, b.z));
       rate = 5;
     }

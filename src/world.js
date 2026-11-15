@@ -6,7 +6,7 @@
 // what decides the frame rate on budget phones.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { STREET, PITCH, RUN_LINES, STUMPS } from './config.js';
+import { STREET, PITCH, RUN_LINES, STUMPS, WIDE_X } from './config.js';
 import { HOUSES } from './street.js';
 import { RNG } from './rng.js';
 
@@ -289,6 +289,8 @@ export class World {
       g.strokeStyle = 'rgba(250,246,235,0.9)'; g.lineWidth = 5; g.lineCap = 'round';
       const line = (x0, z0, x1, z1) => { g.beginPath(); g.moveTo(px(x0), py(z0)); g.lineTo(px(x1), py(z1)); g.stroke(); };
       line(-1.3, 0.6, 1.3, 0.6); line(-1.3, PITCH.releaseZ, 1.3, PITCH.releaseZ);
+      // wide lines: a ball that passes outside these without being hit is a wide
+      line(-WIDE_X, -0.5, -WIDE_X, 1.5); line(WIDE_X, -0.5, WIDE_X, 1.5);
       g.setLineDash([22, 16]); g.lineWidth = 6;
       g.font = '900 86px Arial Black, Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
       RUN_LINES.forEach((z, i) => {

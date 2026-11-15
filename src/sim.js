@@ -11,12 +11,14 @@ const ROLL_DECEL = 4.6;
 const CATCH_R = 0.8;
 
 export class Play {
-  constructor({ delivery, field, rng, hand = 'R', windowScale = 1 }) {
+  constructor({ delivery, field, rng, hand = 'R', windowScale = 1, freeHit = false }) {
     const d = delivery;
     this.d = d;
     this.rng = rng;
     this.handSign = hand === 'L' ? -1 : 1;
     this.w = windowScale;
+    this.freeHit = freeHit;   // the batter cannot be out on this ball
+    this.stanceX = 0;         // how far the batter has moved across the crease (set by the game)
     this.t = 0;
     this.acc = 0;
     this.phase = 'flight'; // flight -> struck -> settle -> done
@@ -68,7 +70,15 @@ export class Play {
   }
 
   finish(o) {
-    this.outcome = { runs: 0, out: null, boundary: 0, wide: false, legal: true, timing: this.timing, timingErr: this.timingErr, fielder: -1, ...o };
+    const out = { runs: 0, out: null, boundary: 0, wide: false, legal: true, noBall: false, freeHit: this.freeHit, saved: null, timing: this.timing, timingErr: this.timingErr, fielder: -1, ...o };
+    if (this.d.noBall) {
+      // One penalty run, the ball is bowled again, and whatever the bat scored still counts.
+      out.runs = (out.wide ? 0 : out.runs) + 1;
+      out.noBall = true; out.wide = false; out.legal = false;
+    }
+    // A wicket does not count off a no ball or on a free hit.
+    if (out.out && (out.noBall || this.freeHit)) { out.saved = out.out; out.out = null; }
+    this.outcome = out;
     this.outcomeT = this.t;
     this.phase = 'settle';
     if (this.outcome.boundary === 6 || this.outcome.out === 'lost') this.settleFor = 1.5;
@@ -94,7 +104,8 @@ export class Play {
         this.emit('stumps', { x: b.x, y: b.y });
         b.vz *= -0.12; b.vy = 1.6; b.vx += this.rng.range(-1, 1);
         this.finish({ out: 'bowled' });
-      } else if (!this.swing && Math.abs(this.d.creaseX ?? b.x) > WIDE_X) {
+      } else if (Math.abs(this.d.creaseX ?? b.x) > WIDE_X) {
+        // Outside the wide line and not hit: a wide, whether or not the batter swung.
         this.finish({ runs: 1, wide: true, legal: false });
       } else {
         this.finish({});
@@ -113,7 +124,8 @@ export class Play {
 
     if (e < -earlyLim || b.z > 3.4) { this.timing = 'early'; this.emit('miss', { label: 'early' }); return; }
     if (e > lateLim || b.z < PITCH.stumpsZ + 0.1) { this.timing = 'late'; this.emit('miss', { label: 'late' }); return; }
-    if (Math.abs(b.x) > 1.0 || b.y > 1.75) { this.timing = 'miss'; this.emit('miss', { label: 'miss' }); return; }
+    const sx = this.stanceX;
+    if (Math.abs(b.x - sx) > 1.0 || b.y > 1.75) { this.timing = 'miss'; this.emit('miss', { label: 'miss' }); return; }
 
     const ae = Math.abs(e);
     let q, label;
@@ -132,8 +144,10 @@ export class Play {
     if (b.y < 0.22) { q *= 0.86; elevMul = 0.6; }            // yorker: hard to get under
     const highBall = b.y > 1.25;
     if (highBall) q *= 0.9;
-    const wide = Math.abs(b.x);
+    const wide = Math.abs(b.x - sx);
     if (wide > 0.6) q *= 1 - (wide - 0.6) * 0.6;
+    // A ball that follows the batter's body is hard to free the arms against.
+    if (Math.abs(b.x - (sx - 0.4 * this.handSign)) < 0.16) q *= 0.9;
 
     // Early swings drag the ball to the leg side, late ones squirt it to the off side.
     const lim = e < 0 ? earlyLim : Math.max(lateLim, 0.02);

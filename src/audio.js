@@ -83,6 +83,7 @@ export class Sound {
   run() { this.tone(520, 0.08, { type: 'triangle', gain: 0.14 }); }
   win() { [523, 659, 784, 1047, 1319].forEach((n, i) => this.tone(n, 0.22, { type: 'triangle', gain: 0.18, delay: i * 0.11 })); this.noise(1.6, { gain: 0.25, freq: 1100, q: 0.5 }); }
   lose() { [330, 294, 262, 196].forEach((n, i) => this.tone(n, 0.3, { type: 'triangle', gain: 0.14, delay: i * 0.18 })); }
+  call() { this.tone(1750, 0.08, { type: 'square', gain: 0.06 }); this.tone(1750, 0.2, { type: 'square', gain: 0.06, delay: 0.12 }); }
   pop() { this.noise(0.35, { gain: 0.16, freq: 900, q: 0.6, to: 300 }); this.tone(140, 0.12, { gain: 0.14, to: 60 }); }
   coin() { this.tone(988, 0.07, { type: 'square', gain: 0.08 }); this.tone(1319, 0.14, { type: 'square', gain: 0.08, delay: 0.07 }); }
 }

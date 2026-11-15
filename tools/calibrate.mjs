@@ -16,7 +16,8 @@ export function playBall(match, bot, rng) {
   const d = play.d;
   const skip = rng.chance(bot.miss);
   const tap = d.tIdeal - TIMING.lag + rng.gauss() * bot.sigma;
-  const loft = rng.chance(bot.loft);
+  // on a free hit there is nothing to lose, so every bot goes for the big shot
+  const loft = rng.chance(bot.loft) || play.freeHit;
   const aim = loft ? rng.gauss() * bot.spread * 0.5 : rng.gauss() * bot.spread;
   let guard = 0;
   while (play.phase !== 'done' && guard++ < 3000) {

@@ -42,7 +42,7 @@ export const ACHIEVEMENTS = [
   { id: 'stars', name: 'Perfectionist', desc: 'Earn 3 stars on 10 chase levels' },
   { id: 'survivor', name: 'Hard to Remove', desc: 'Score 75 in Survival' },
   { id: 'super24', name: 'Big Over', desc: 'Score 24 or more in a Super Over' },
-  { id: 'super36', name: 'Six Sixes, One Over', desc: 'Score a perfect 36 in a Super Over' },
+  { id: 'super36', name: 'Six Sixes, One Over', desc: 'Score 36 or more in a Super Over' },
   { id: 'night_six', name: 'Night Rider', desc: 'Hit a six under the street lamps' },
   { id: 'collector', name: 'Kit Bag', desc: 'Own 4 bats' }
 ];

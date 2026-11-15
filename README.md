@@ -6,17 +6,19 @@ It is a static site with no server. Progress is saved in the player's browser.
 
 ## Play it
 
-Open `index.html` in a browser, or host the folder on any static host (see below). On a phone, swipe up as the ball arrives; swipe left or right to aim. On a keyboard, use the arrow keys, and hold Shift to loft.
+Open `index.html` in a browser, or host the folder on any static host (see below). On a phone, swipe up as the ball arrives, swipe left or right to aim, and hold the arrow buttons to move across the crease. On a keyboard, use the arrow keys to swing, hold Shift to loft, and hold Z or C to move.
 
 ## What is in the game
 
 - **Daily Challenge:** four overs and three wickets against the same deliveries for every player that day, with bronze, silver and gold medals, a day streak, and a challenge link that tells a friend the score to beat.
 - **Chase:** 15 levels with rising targets, different bowlers and field settings, and up to three stars each.
-- **Super Over:** six balls and two wickets for a quick high score out of 36.
+- **Super Over:** six balls and two wickets for a quick high score.
 - **Survival:** bat until three wickets fall while the bowling gets harder and the evening turns to night.
 - **Practice:** pick any bowler, with no wickets and nothing saved.
 - **Seven bowlers:** medium pace, swing, spin, express pace and two who mix everything.
 - **Gully rules:** chalk lines score 1, 2 and 3, the far wall is 4, over it is 6, roofs are 6 except the red houses, windows are out, and a fielder can catch you after one bounce.
+- **Wides, no balls and free hits:** a ball outside the wide lines that is not hit is +1 and bowled again; a no ball is +1, cannot take a wicket, and makes the next ball a free hit.
+- **Stance:** the batter can shuffle across the crease to reach a wide ball or make room.
 - **Day, dusk and night:** street lamps, lit windows, a power-cut level and festival nights with fireworks for sixes.
 - **Shop, trophies and stats:** runs earn coins for bats and balls; 21 achievements.
 - **Timing guide:** a ring closes when it is time to swing, shown in practice and the first levels.

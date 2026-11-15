@@ -93,6 +93,57 @@ with sync_playwright() as p:
     next_ball(); pg.mouse.move(350, 500); pg.mouse.down()
     sw = pg.evaluate(swing); check(sw is not None and sw["aim"] > 0.5, "tap controls: touching the right side swings right at once (%s)" % sw)
     pg.mouse.up(); pg.evaluate("__gs.store.setSetting('controls','swipe')")
+    print("stance")
+    # Steps until a newly bowled ball is in the air (the page also runs on its own clock, so
+    # the test waits for a new ball object rather than counting frames).
+    def fresh_ball():
+        pg.evaluate("()=>{window.__old=__gs.game.play;}")
+        for _ in range(900):
+            st = pg.evaluate("(n)=>{const g=__gs.game; for(let i=0;i<n;i++) g.update(1/60); return {s:g.state, fresh:g.play!==window.__old};}", 3)
+            if st["fresh"] and st["s"] == "live": return
+    force = "()=>{const m=__gs.game.match; if(!m.__orig) m.__orig=m.nextPlay.bind(m); m.nextPlay=(h)=>{ for(let i=0;i<900;i++){ const p=m.__orig(h); if(%s) { %s return p; } } return m.__orig(h); };}"
+    fresh_ball()
+    pg.keyboard.down("c"); pg.evaluate(STEP, 12); pg.keyboard.up("c")
+    st1 = pg.evaluate("__gs.game.stance")
+    check(st1 > 0.2, "holding C moves the batter across (%.2f m)" % st1)
+    pg.evaluate(STEP, 5)
+    check(abs(pg.evaluate("__gs.game.stance") - st1) < 1e-6, "the batter stops when the key is released")
+    box = pg.evaluate("(()=>{const r=document.getElementById('moveL').getBoundingClientRect(); return [r.x+r.width/2, r.y+r.height/2, r.width];})()")
+    check(box[2] > 40, "move buttons are shown on touch screens")
+    pg.mouse.move(box[0], box[1]); pg.mouse.down()
+    for _ in range(100):
+        pg.evaluate(STEP, 6)
+        if pg.evaluate("__gs.game.stance") <= -0.549: break
+    check(abs(pg.evaluate("__gs.game.stance") + 0.55) < 0.01, "holding the left button moves to the limit and no further")
+    check(pg.evaluate("Math.abs(__gs.game.batter.kid.group.position.x - (-0.4 + __gs.game.stance)) < 0.02"), "the batter model follows the stance")
+    shot(pg, "stance-left")
+    pg.mouse.up()
+    check(pg.evaluate("__gs.game.moveDir") == 0, "releasing the button stops the movement")
+
+    print("no ball, free hit and wide")
+    pg.evaluate(force % ("!p.d.wideBall", "p.d.noBall=true;"))
+    fresh_ball()                                   # the no ball is in the air
+    pg.evaluate(force % ("!p.d.wideBall && !p.d.noBall", ""))
+    check(pg.evaluate("document.getElementById('call').textContent.includes('NO BALL')"), "a no ball is called as the ball is released")
+    shot(pg, "no-ball-call")
+    fresh_ball()                                   # the free hit is in the air
+    last = pg.evaluate("__gs.game.match.log[__gs.game.match.log.length-1]")
+    check(last["noBall"] and last["runs"] >= 1 and last["out"] is None, "the no ball adds a run and takes no wicket (%s)" % json.dumps(last))
+    check(pg.evaluate("__gs.game.play.freeHit && !document.getElementById('freeHit').hidden"), "the next ball is a free hit and the badge shows")
+    shot(pg, "free-hit")
+    legal_before = pg.evaluate("__gs.game.match.legal")
+    pg.evaluate(force % ("p.d.wideBall && !p.d.noBall", ""))
+    fresh_ball()                                   # a wide is in the air
+    pg.evaluate("()=>{const m=__gs.game.match; m.nextPlay=m.__orig;}")
+    last = pg.evaluate("__gs.game.match.log[__gs.game.match.log.length-1]")
+    check(last["out"] is None, "nothing on a free hit is out (%s)" % json.dumps(last))
+    check(pg.evaluate("__gs.game.match.legal") == legal_before + 1 and not pg.evaluate("__gs.game.match.freeHit"), "the free hit is used up by a legal ball")
+    check(pg.evaluate("__gs.game.play.d.wideBall && document.getElementById('freeHit').hidden"), "a wide delivery is bowled and the badge is gone")
+    fresh_ball()
+    last = pg.evaluate("__gs.game.match.log[__gs.game.match.log.length-1]")
+    check(last["wide"] and last["runs"] == 1, "a ball outside the wide line that is not hit is a wide (%s)" % json.dumps(last))
+    check(pg.evaluate("[...document.querySelectorAll('#hOver i.extra')].length") >= 1, "extras are marked in the over tracker")
+
     pg.click("#loftBtn", timeout=30000); check(pg.evaluate("__gs.game.loft") is True, "the loft button toggles")
     pg.click("#pauseBtn", timeout=30000); check(pg.evaluate("__gs.game.paused && !document.getElementById('pause').hidden"), "the pause button pauses")
     pg.keyboard.press("Escape"); check(not pg.evaluate("__gs.game.paused"), "Escape resumes")
